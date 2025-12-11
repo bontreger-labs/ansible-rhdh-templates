@@ -97,12 +97,20 @@ spec:
       action: roadiehq:utils:jsonata
       input:
         expression: $fromMillis($millis(), '[Y0001]-[M01]-[D01]')
-        
+
+    - id: fetch_skeleton
+      name: Force Download Skeleton
+      action: fetch:plain
+      input:
+        # This action is purely for downloading. It is much more robust.
+        url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/skeleton
+        targetPath: ./
+
     - id: overlay
       name: Applying Custom Skeleton
       action: fetch:template
       input:
-        url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/skeleton
+        url: ./
         targetPath: ./
         values:
           name: ${{ parameters.repoName }}
