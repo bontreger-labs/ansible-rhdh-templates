@@ -76,6 +76,14 @@ spec:
         applicationType: playbook-project
         sourceControl: '${{ parameters.sourceControl }}'
 
+    - id: overlay
+      name: Applying Custom Skeleton
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+        conflictStrategy: override
+
     - id: catalogTemplate
       name: Generating the Catalog Info Component
       action: fetch:template
