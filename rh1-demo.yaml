@@ -107,7 +107,6 @@ spec:
         url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/skeleton
         targetPath: ./${{ parameters.repoName }}
         # Removed conflictStrategy if it causes issues, but keeping if you said this loads.
-        conflictStrategy: override 
         values:
           # Changed from 'name' to 'repoName'
           name: ${{ parameters.repoName }}
