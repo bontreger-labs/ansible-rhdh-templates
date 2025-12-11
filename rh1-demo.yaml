@@ -119,7 +119,7 @@ steps:
         files: 
           - ./${{ parameters.repoName }}/** # Target everything recursively
         find: '{{ name }}'
-        replace: ${{ parameters.repoName }}
+        replaceWith: ${{ parameters.repoName }}
 
     - id: replace_description
       name: Set Project Description
@@ -128,7 +128,7 @@ steps:
         files: 
           - ./${{ parameters.repoName }}/**
         find: '{{ description }}'
-        replace: ${{ parameters.description }}
+        replaceWith: ${{ parameters.description }}
 
     - id: replace_date
       name: Set Project Date
@@ -137,7 +137,7 @@ steps:
         files: 
           - ./${{ parameters.repoName }}/**
         find: '{{ run_date }}'
-        replace: ${{ steps.get_date.output.result }}
+        replaceWith: ${{ steps.get_date.output.result }}
 
     # 5. GENERATE CATALOG INFO (Into the Ansible folder)
     - id: catalogTemplate
