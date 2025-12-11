@@ -2,7 +2,7 @@ apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
   name: RH1-Demo-Template
-  title: Bontreger - RH1 Demo
+  title: Bontreger - RH1 Demo (Restored)
   description: Create a preconfigured Git project with some scaffolds.
   tags:
     - recommended
@@ -80,6 +80,7 @@ spec:
               kind:
                 - System
   steps:
+    # 1. CREATE THE ANSIBLE PROJECT
     - id: ansible
       name: Generating the Ansible Source Code Component
       action: ansible:content:create
@@ -92,47 +93,43 @@ spec:
         applicationType: playbook-project
         sourceControl: '${{ parameters.sourceControl }}'
 
-    - id: get_date
-      name: Generate Timestamp
-      action: roadiehq:utils:jsonata
-      input:
-        expression: $fromMillis($millis(), '[Y0001]-[M01]-[D01]')
-
-    # FIX: Use Absolute URL and Correct Variable Name (repoName)
+    # 2. INJECT SKELETON (Uses fetch:plain to MERGE, not replace)
+    # This restores the behavior where files are successfully brought in.
     - id: overlay
-      name: Applying Custom Skeleton
-      action: fetch:template
+      name: Inject Custom Skeleton
+      action: fetch:plain
       input:
-        # Changed from ../skeleton to absolute URL
+        # Absolute URL to ensure it finds the files
         url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/skeleton
+        # Target the folder Ansible created. fetch:plain merges by default.
         targetPath: ./${{ parameters.repoName }}
-        # Removed conflictStrategy if it causes issues, but keeping if you said this loads.
-        values:
-          # Changed from 'name' to 'repoName'
-          name: ${{ parameters.repoName }}
-          description: ${{ parameters.description }}
-          owner: ${{ parameters.repoOwner }}
-          run_date: ${{ steps.get_date.output.result }}
 
-    # FIX: Use Absolute URL for Catalog Info
+    # 3. GENERATE CATALOG INFO (Robust Method)
+    # Writing this directly prevents policy errors and variable issues.
     - id: catalogTemplate
       name: Generating the Catalog Info Component
-      action: fetch:template
+      action: catalog:write
       input:
-        # Changed from ../catalog-info/ to absolute URL
-        url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/catalog-info/
-        targetPath: ./${{ parameters.repoName }}
-        values:
-          repoUrl: ${{ steps.ansible.output.repoUrl }}
-          owner: ${{ parameters.owner }}
-          system: ${{ parameters.system }}
-          applicationType: playbook-project
-          description: ${{ parameters.description }}
-          collectionGroup: ${{ parameters.collectionGroup }}
-          collectionName: ${{ parameters.collectionName }}
-          sourceControl: ${{ parameters.sourceControl }}
-          devSpacesBaseUrl: ${{ steps.ansible.output.devSpacesBaseUrl }}
+        filePath: ./${{ parameters.repoName }}/catalog-info.yaml
+        content:
+          apiVersion: backstage.io/v1alpha1
+          kind: Component
+          metadata:
+            name: ${{ parameters.repoName }}
+            title: ${{ parameters.repoName }}
+            description: ${{ parameters.description }}
+            tags:
+              - ansible
+              - playbook
+            annotations:
+              github.com/project-slug: ${{ parameters.repoOwner }}/${{ parameters.repoName }}
+          spec:
+            type: service
+            lifecycle: production
+            owner: ${{ parameters.owner }}
+            system: ${{ parameters.system }}
 
+    # 4. PUBLISH TO GITHUB
     - id: publish
       name: Publish
       action: publish:github
@@ -141,9 +138,10 @@ spec:
         repoUrl: ${{ steps.ansible.output.repoUrl }}
         repoVisibility: 'public'
         defaultBranch: main
-        # FIX: Ensure we publish the folder, not the parent root
+        # Ensure we publish the folder, not the workspace root
         sourcePath: ./${{ parameters.repoName }}
 
+    # 5. REGISTER IN CATALOG
     - id: register
       name: Register
       action: catalog:register
