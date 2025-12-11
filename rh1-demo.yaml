@@ -121,7 +121,7 @@ steps:
           - ./${{ parameters.repoName }}/** # Target everything recursively
         
         # CRITICAL FIX: The replacements must be an array of patches
-        patches:
+        replacements:
           - find: '{{ name }}'
             replaceWith: ${{ parameters.repoName }}
           
