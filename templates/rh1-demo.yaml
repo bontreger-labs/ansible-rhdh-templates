@@ -82,6 +82,7 @@ spec:
       input:
         url: ./skeleton
         values:
+          name: ${{ parameters.name }}
         conflictStrategy: override
 
     - id: catalogTemplate
