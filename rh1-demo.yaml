@@ -135,7 +135,7 @@ spec:
         repoUrl: ${{ steps.ansible.output.repoUrl }}
         repoVisibility: 'public'
         defaultBranch: main
-        sourcePath: ./${{ parameters.repoName }}
+        sourcePath: .
 
     # 5. REGISTER IN CATALOG
     - id: register
