@@ -2,89 +2,60 @@ apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
   name: RH1-Demo-Template
-  title: Bontreger - RH1 Demo (Final Working)
-  description: Create a preconfigured Git project with some scaffolds.
+  title: Bontreger - RH1 Demo (Minimum Viable)
+  description: Create a preconfigured Git project.
   tags:
-    - recommended
     - ansible
-    - playbook
 spec:
   owner: user:default/bontreger
   system: ansible
   type: service
   parameters:
-    # ... (parameters block remains the same)
-    
+    - title: Provide Information
+      required:
+        - repoOwner
+        - repoName
+        - owner
+      properties:
+        repoOwner:
+          title: GitHub Organization/User
+          type: string
+        repoName:
+          title: Repository Name
+          type: string
+        owner:
+          title: Catalog Owner
+          type: string
+          ui:field: EntityPicker
+
 steps:
-    # 1. CREATE THE ANSIBLE PROJECT
+    # 1. CREATE THE ANSIBLE PROJECT (The core function)
     - id: ansible
       name: Generating the Ansible Source Code Component
       action: ansible:content:create
       input:
         repoOwner: '${{ parameters.repoOwner }}'
         repoName: '${{ parameters.repoName }}'
-        description: '${{ parameters.description }}'
-        collectionGroup: '${{ parameters.collectionGroup }}'
-        collectionName: '${{ parameters.collectionName }}'
         applicationType: playbook-project
-        sourceControl: '${{ parameters.sourceControl }}'
 
-    # 2. DOWNLOAD SKELETON (SUCCESSFUL STEP - Uses fetch:plain)
-    # NOTE: Your skeleton files must be static (no {{ variables }})
-    - id: fetch_skeleton
-      name: Inject Custom Skeleton Files
-      action: fetch:plain
-      input:
-        url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/skeleton
-        targetPath: ./${{ parameters.repoName }} # Overwrites defaults with your static files
-
-    # 3. GENERATE CATALOG INFO (The robust, policy-compliant method)
-    - id: catalogTemplate
-      name: Generating the Catalog Info Component
-      action: catalog:write
-      input:
-        filePath: ./${{ parameters.repoName }}/catalog-info.yaml
-        content:
-          apiVersion: backstage.io/v1alpha1
-          kind: Component
-          metadata:
-            name: ${{ parameters.repoName }}
-            title: ${{ parameters.repoName }}
-            description: ${{ parameters.description }}
-            tags:
-              - ansible
-              - playbook
-            annotations:
-              github.com/project-slug: ${{ parameters.repoOwner }}/${{ parameters.repoName }}
-          spec:
-            type: service
-            lifecycle: production
-            owner: ${{ parameters.owner }}
-            system: ${{ parameters.system }}
-
-    # 4. PUBLISH TO GITHUB
+    # 2. PUBLISH TO GITHUB (Minimal inputs)
     - id: publish
-      name: Publish
+      name: Publish to GitHub
       action: publish:github
       input:
-        description: ${{ parameters.description }}
-        repoUrl: ${{ steps.ansible.output.repoUrl }}
+        repoUrl: https://github.com/${{ parameters.repoOwner }}/${{ parameters.repoName }}
         repoVisibility: 'public'
-        defaultBranch: main
         sourcePath: ./${{ parameters.repoName }}
 
-    # 5. REGISTER IN CATALOG
+    # 3. REGISTER IN CATALOG (Minimal inputs)
     - id: register
-      name: Register
+      name: Register in Catalog
       action: catalog:register
       input:
         repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
         catalogInfoPath: '/catalog-info.yaml'
-        
+
 output:
     links:
       - title: Repository
         url: ${{ steps.publish.output.remoteUrl }}
-      - title: Open in catalog
-        icon: catalog
-        entityRef: ${{ steps.register.output.entityRef }}
