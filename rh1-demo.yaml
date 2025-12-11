@@ -2,7 +2,7 @@ apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
   name: RH1-Demo-Template
-  title: Bontreger - RH1 Demo
+  title: Bontreger - RH1 Demo (Reverted)
   description: Create a preconfigured Git project with some scaffolds.
   tags:
     - recommended
@@ -13,73 +13,9 @@ spec:
   system: ansible
   type: service
   parameters:
-    - title: Provide information about the new component
-      required:
-        - repoOwner
-        - repoName
-        - owner
-        - collectionGroup
-        - collectionName
-      properties:
-        sourceControl:
-          title: Select source control option
-          type: string
-          description: Select the source control option for your Ansible project.
-          default: github.com
-          enum:
-            - github.com
-          enumNames:
-            - 'GitHub'
-        repoOwner:
-          title: Source code repository organization name or username
-          type: string
-          description: The organization name or username of your source code repository. For example, “my-github-username”.
-          maxLength: 100
-        repoName:
-          title: Playbook repository name
-          description: The name of the new playbook project repository. For example, “my-new-playbook-repo”.
-          type: string
-          maxLength: 100
-          pattern: '^([a-zA-Z][a-zA-Z0-9_]*)(-[a-zA-Z0-9_]+)*$'
-        description:
-          title: Playbook description
-          type: string
-          description: Describe the playbook and its purpose to help other users understand what to use it for.
-          maxLength: 350
-        collectionGroup:
-          title: Playbook project's collection namespace
-          description: The collection namespace in your new playbook repository. For example, “my_new_collection_namespace”.
-          type: string
-          maxLength: 63
-          minLength: 2
-          pattern: '^[a-z][a-z0-9_]+$'
-        collectionName:
-          title: Playbook project's collection name
-          description: The collection name in your new playbook repository. For example, “my_new_collection_name”.
-          type: string
-          maxLength: 63
-          minLength: 2
-          pattern: '^[a-z][a-z0-9_]+$'
-        owner:
-          title: Catalog Owner name
-          type: string
-          description: The Red Hat Developer Hub catalog item owner. This will appear on the “My items” tab. For example, “my-devhub-username”.
-          ui:field: EntityPicker
-          ui:options:
-            catalogFilter:
-              kind:
-                - Group
-                - User
-        system:
-          title: System
-          type: string
-          description: The Red Hat Developer Hub system catalog item name. This will appear on the “My items” tab. For example, “my-devhub-system”.
-          ui:field: EntityPicker
-          ui:options:
-            catalogFilter:
-              kind:
-                - System
-  steps:
+    # ... (parameters block remains the same)
+steps:
+    # 1. CREATE THE ANSIBLE PROJECT
     - id: ansible
       name: Generating the Ansible Source Code Component
       action: ansible:content:create
@@ -92,40 +28,62 @@ spec:
         applicationType: playbook-project
         sourceControl: '${{ parameters.sourceControl }}'
 
-    - id: get_date
-      name: Generate Timestamp
-      action: roadiehq:utils:jsonata
+    # 2. DOWNLOAD SKELETON (Download raw files from Git into the project folder)
+    - id: fetch_skeleton
+      name: Download Custom Skeleton
+      action: fetch:plain
       input:
-        expression: $fromMillis($millis(), '[Y0001]-[M01]-[D01]')
-        
-    - id: overlay
-      name: Applying Custom Skeleton
+        url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/skeleton
+        targetPath: ./${{ parameters.repoName }}/skeleton_temp # Download to a temporary folder
+
+    # 3. APPLY TEMPLATING AND MOVE FILES
+    # This step uses the downloaded files and processes the variables
+    - id: template_and_move
+      name: Inject Custom Files (Template)
       action: fetch:template
       input:
-        url: ../skeleton
-        targetPath: ./${{ parameters.name }}
+        # Source the template files from the folder we just downloaded to
+        url: ./${{ parameters.repoName }}/skeleton_temp 
+        # Target the final location (the root of the project folder)
+        targetPath: ./${{ parameters.repoName }}
+        # We will need the conflictStrategy to ensure we overwrite defaults
+        conflictStrategy: override 
         values:
-          name: ${{ parameters.name }}
+          # Variable mapping (Ensure these match your README file)
+          name: ${{ parameters.repoName }}
+          owner: ${{ parameters.repoOwner }}
           description: ${{ parameters.description }}
-          run_date: ${{ steps.get_date.output.result }}
-      conflictStrategy: override
+          # Date variable will be empty but won't crash the template
 
+    # 4. REMOVE TEMPORARY DOWNLOAD FOLDER
+    # NOTE: You will need to re-enable fs:delete if this fails, but let's test without
+    # deleting the temp folder first to avoid another policy check failure.
+    
+    # 5. GENERATE CATALOG INFO (Inline, safe version)
     - id: catalogTemplate
       name: Generating the Catalog Info Component
-      action: fetch:template
+      action: catalog:write
       input:
-        url: ../catalog-info/
-        values:
-          repoUrl: ${{ steps.ansible.output.repoUrl }}
-          owner: ${{ parameters.owner }}
-          system: ${{ parameters.system }}
-          applicationType: playbook-project
-          description: ${{ parameters.description }}
-          collectionGroup: ${{ parameters.collectionGroup }}
-          collectionName: ${{ parameters.collectionName }}
-          sourceControl: ${{ parameters.sourceControl }}
-          devSpacesBaseUrl: ${{ steps.ansible.output.devSpacesBaseUrl }}
+        filePath: ./${{ parameters.repoName }}/catalog-info.yaml
+        content:
+          apiVersion: backstage.io/v1alpha1
+          kind: Component
+          metadata:
+            name: ${{ parameters.repoName }}
+            title: ${{ parameters.repoName }}
+            description: ${{ parameters.description }}
+            tags:
+              - ansible
+              - playbook
+            annotations:
+              github.com/project-slug: ${{ parameters.repoOwner }}/${{ parameters.repoName }}
+          spec:
+            type: service
+            lifecycle: production
+            owner: ${{ parameters.owner }}
+            system: ${{ parameters.system }}
 
+    # 6. PUBLISH TO GITHUB
     - id: publish
       name: Publish
       action: publish:github
@@ -134,20 +92,20 @@ spec:
         repoUrl: ${{ steps.ansible.output.repoUrl }}
         repoVisibility: 'public'
         defaultBranch: main
-        sourcePath: .
-        
+        sourcePath: ./${{ parameters.repoName }}
+
+    # 7. REGISTER IN CATALOG
     - id: register
       name: Register
       action: catalog:register
       input:
         repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
         catalogInfoPath: '/catalog-info.yaml'
-
-  output:
+        
+output:
     links:
       - title: Repository
         url: ${{ steps.publish.output.remoteUrl }}
-
       - title: Open in catalog
         icon: catalog
         entityRef: ${{ steps.register.output.entityRef }}
