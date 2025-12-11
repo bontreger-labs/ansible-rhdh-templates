@@ -103,7 +103,7 @@ spec:
       action: fetch:template
       input:
         url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/skeleton
-        targetPath: ./${{ parameters.name }}
+        targetPath: ./
         values:
           name: ${{ parameters.name }}
           description: ${{ parameters.description }}
