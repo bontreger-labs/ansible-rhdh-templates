@@ -107,7 +107,7 @@ spec:
           name: ${{ parameters.name }}
           description: ${{ parameters.description }}
           run_date: ${{ steps.get_date.output.result }}
-        conflictStrategy: override
+      conflictStrategy: override
 
     - id: catalogTemplate
       name: Generating the Catalog Info Component
