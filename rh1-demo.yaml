@@ -2,7 +2,7 @@ apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
   name: RH1-Demo-Template
-  title: Bontreger - RH1 Demo (Restored)
+  title: Bontreger - RH1 Demo (Final Fix)
   description: Create a preconfigured Git project with some scaffolds.
   tags:
     - recommended
@@ -93,25 +93,22 @@ spec:
         applicationType: playbook-project
         sourceControl: '${{ parameters.sourceControl }}'
 
-    # 2. INJECT SKELETON (Uses fetch:plain to MERGE, not replace)
-    # This restores the behavior where files are successfully brought in.
+    # 2. INJECT SKELETON (Merge custom files into the Ansible folder)
     - id: overlay
       name: Inject Custom Skeleton
       action: fetch:plain
       input:
-        # Absolute URL to ensure it finds the files
         url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/skeleton
-        # Target the folder Ansible created. fetch:plain merges by default.
         targetPath: ./${{ parameters.repoName }}
 
-    # 3. GENERATE CATALOG INFO (Robust Method)
-    # Writing this directly prevents policy errors and variable issues.
+    # 3. GENERATE CATALOG INFO (Fixed Property Name)
     - id: catalogTemplate
       name: Generating the Catalog Info Component
       action: catalog:write
       input:
         filePath: ./${{ parameters.repoName }}/catalog-info.yaml
-        content:
+        # FIX: Changed 'content' to 'entity' to match schema
+        entity:
           apiVersion: backstage.io/v1alpha1
           kind: Component
           metadata:
@@ -138,7 +135,6 @@ spec:
         repoUrl: ${{ steps.ansible.output.repoUrl }}
         repoVisibility: 'public'
         defaultBranch: main
-        # Ensure we publish the folder, not the workspace root
         sourcePath: ./${{ parameters.repoName }}
 
     # 5. REGISTER IN CATALOG
