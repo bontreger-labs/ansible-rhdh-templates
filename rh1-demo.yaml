@@ -94,22 +94,6 @@ steps:
         applicationType: playbook-project
         sourceControl: '${{ parameters.sourceControl }}'
 
-    - id: get_date
-      name: Generate Timestamp
-      action: roadiehq:utils:jsonata
-      input:
-        expression: $fromMillis($millis(), '[Y0001]-[M01]-[D01]')
-
-    - id: cleanup
-      name: Clean up a sampling of Ansible Default Files
-      action: roadiehq:utils:fs:delete
-      input:
-        files:
-          - ./${{ parameters.repoName }}/argspec_validation_plays.yml
-          - ./${{ parameters.repoName }}/argspec_validation_plays.meta.yml
-          - ./${{ parameters.repoName }}/AGENTS.md
-          - ./${{ parameters.repoName }}/network_playbook.yml
-
     - id: fetch_skeleton
       name: Inject Custom Skeleton
       action: fetch:plain
