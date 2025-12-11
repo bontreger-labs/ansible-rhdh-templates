@@ -102,7 +102,7 @@ spec:
       name: Applying Custom Skeleton
       action: fetch:template
       input:
-        url: ./skeleton
+        url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/skeleton
         targetPath: ./${{ parameters.name }}
         values:
           name: ${{ parameters.name }}
