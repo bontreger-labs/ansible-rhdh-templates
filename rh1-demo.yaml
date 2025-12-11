@@ -110,6 +110,12 @@ spec:
           run_date: ${{ steps.get_date.output.result }}
       conflictStrategy: override
 
+    - id: debug_overlay
+      name: Debug Overlay Files
+      action: debug:log
+      input:
+        message: "Files processed: ${{ steps.overlay.output.processedFilePaths | dump }}"
+
     - id: catalogTemplate
       name: Generating the Catalog Info Component
       action: fetch:template
@@ -134,6 +140,7 @@ spec:
         repoUrl: ${{ steps.ansible.output.repoUrl }}
         repoVisibility: 'public'
         defaultBranch: main
+        sourcePath: .
 
     - id: register
       name: Register
