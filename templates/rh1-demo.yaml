@@ -94,13 +94,10 @@ spec:
 
     - id: get_date
       name: Generate Timestamp
-      action: exec
+      action: roadiehq:utils:jsonata
       input:
-        command: date
-        # Format: YYYY-MM-DD (e.g., 2025-12-11)
-        args:
-          - '+%Y-%m-%d'
-
+        expression: $fromMillis($millis(), '[Y0001]-[M01]-[D01]')
+        
     - id: overlay
       name: Applying Custom Skeleton
       action: fetch:template
@@ -109,7 +106,7 @@ spec:
         values:
           name: ${{ parameters.name }}
           description: ${{ parameters.description }}
-          run_date: ${{ steps.get_date.output.stdout | trim }}
+          run_date: ${{ steps.get_date.output.result }}
         conflictStrategy: override
 
     - id: catalogTemplate
