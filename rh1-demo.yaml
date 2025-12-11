@@ -105,7 +105,7 @@ spec:
         url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/skeleton
         targetPath: ./
         values:
-          name: ${{ parameters.name }}
+          name: ${{ parameters.repoName }}
           description: ${{ parameters.description }}
           run_date: ${{ steps.get_date.output.result }}
       conflictStrategy: override
