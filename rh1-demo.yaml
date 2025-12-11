@@ -112,32 +112,27 @@ steps:
         # CRITICAL: Put files INSIDE the folder Ansible created
         targetPath: ./${{ parameters.repoName }}
 
-    - id: replace_name
-      name: Set Project Name
+    # 4. REPLACE VARIABLES (The Final, Correct Structure)
+    - id: replace_variables
+      name: Replace Variables in Skeleton
       action: roadiehq:utils:fs:replace
       input:
-        files: 
+        files:
           - ./${{ parameters.repoName }}/** # Target everything recursively
-        find: '{{ name }}'
-        replaceWith: ${{ parameters.repoName }}
-
-    - id: replace_description
-      name: Set Project Description
-      action: roadiehq:utils:fs:replace
-      input:
-        files: 
-          - ./${{ parameters.repoName }}/**
-        find: '{{ description }}'
-        replaceWith: ${{ parameters.description }}
-
-    - id: replace_date
-      name: Set Project Date
-      action: roadiehq:utils:fs:replace
-      input:
-        files: 
-          - ./${{ parameters.repoName }}/**
-        find: '{{ run_date }}'
-        replaceWith: ${{ steps.get_date.output.result }}
+        
+        # CRITICAL FIX: The replacements must be an array of patches
+        patches:
+          - find: '{{ name }}'
+            replaceWith: ${{ parameters.repoName }}
+          
+          - find: '{{ description }}'
+            replaceWith: ${{ parameters.description }}
+            
+          - find: '{{ owner }}'
+            replaceWith: ${{ parameters.repoOwner }}
+            
+          - find: '{{ run_date }}'
+            replaceWith: ${{ steps.get_date.output.result }}
 
     # 5. GENERATE CATALOG INFO (Into the Ansible folder)
     - id: catalogTemplate
