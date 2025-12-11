@@ -2,7 +2,7 @@ apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
   name: RH1-Demo-Template
-  title: Bontreger - RH1 Demo (Final Stable)
+  title: Bontreger - RH1 Demo (Final Working)
   description: Create a preconfigured Git project with some scaffolds.
   tags:
     - recommended
@@ -29,22 +29,38 @@ steps:
         applicationType: playbook-project
         sourceControl: '${{ parameters.sourceControl }}'
 
-    # 2. DOWNLOAD SKELETON (Using compliant fetch:plain for injection)
-    - id: overlay
-      name: Inject Custom Skeleton
+    # 2. DOWNLOAD SKELETON (SUCCESSFUL STEP - Uses fetch:plain)
+    # NOTE: Your skeleton files must be static (no {{ variables }})
+    - id: fetch_skeleton
+      name: Inject Custom Skeleton Files
       action: fetch:plain
       input:
         url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/skeleton
-        targetPath: ./${{ parameters.repoName }} # Overwrites defaults with static content
+        targetPath: ./${{ parameters.repoName }} # Overwrites defaults with your static files
 
-    # 3. GENERATE CATALOG INFO (Using compliant fetch:plain for catalog info)
+    # 3. GENERATE CATALOG INFO (The robust, policy-compliant method)
     - id: catalogTemplate
       name: Generating the Catalog Info Component
-      action: fetch:plain
+      action: catalog:write
       input:
-        # Fetch the catalog-info file from your repo
-        url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/catalog-info/catalog-info.yaml
-        targetPath: ./${{ parameters.repoName }}/catalog-info.yaml # Place it in the project folder
+        filePath: ./${{ parameters.repoName }}/catalog-info.yaml
+        content:
+          apiVersion: backstage.io/v1alpha1
+          kind: Component
+          metadata:
+            name: ${{ parameters.repoName }}
+            title: ${{ parameters.repoName }}
+            description: ${{ parameters.description }}
+            tags:
+              - ansible
+              - playbook
+            annotations:
+              github.com/project-slug: ${{ parameters.repoOwner }}/${{ parameters.repoName }}
+          spec:
+            type: service
+            lifecycle: production
+            owner: ${{ parameters.owner }}
+            system: ${{ parameters.system }}
 
     # 4. PUBLISH TO GITHUB
     - id: publish
