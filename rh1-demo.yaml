@@ -112,21 +112,32 @@ steps:
         # CRITICAL: Put files INSIDE the folder Ansible created
         targetPath: ./${{ parameters.repoName }}
 
-    # 4. APPLY VARIABLES (To the files we just downloaded)
-    - id: template_skeleton
-      name: Customize Skeleton Files
-      action: fetch:template
+    - id: replace_name
+      name: Set Project Name
+      action: roadiehq:utils:fs:replace
       input:
-        # Target the same folder where we just put the files
-        url: ./${{ parameters.repoName }}
-        targetPath: ./${{ parameters.repoName }}
-        conflictStrategy: override
-        values:
-          # Map your specific parameters to the variables used in README.md
-          name: ${{ parameters.repoName }}
-          owner: ${{ parameters.repoOwner }}
-          description: ${{ parameters.description }}
-          run_date: ${{ steps.get_date.output.result }}
+        files: 
+          - ./${{ parameters.repoName }}/** # Target everything recursively
+        find: '{{ name }}'
+        replace: ${{ parameters.repoName }}
+
+    - id: replace_description
+      name: Set Project Description
+      action: roadiehq:utils:fs:replace
+      input:
+        files: 
+          - ./${{ parameters.repoName }}/**
+        find: '{{ description }}'
+        replace: ${{ parameters.description }}
+
+    - id: replace_date
+      name: Set Project Date
+      action: roadiehq:utils:fs:replace
+      input:
+        files: 
+          - ./${{ parameters.repoName }}/**
+        find: '{{ run_date }}'
+        replace: ${{ steps.get_date.output.result }}
 
     # 5. GENERATE CATALOG INFO (Into the Ansible folder)
     - id: catalogTemplate
