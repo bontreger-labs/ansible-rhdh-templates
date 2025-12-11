@@ -76,6 +76,15 @@ spec:
         applicationType: playbook-project
         sourceControl: '${{ parameters.sourceControl }}'
 
+    - id: get_date
+      name: Generate Timestamp
+      action: exec
+      input:
+        command: date
+        # Format: YYYY-MM-DD (e.g., 2025-12-11)
+        args:
+          - '+%Y-%m-%d'
+
     - id: overlay
       name: Applying Custom Skeleton
       action: fetch:template
@@ -83,6 +92,8 @@ spec:
         url: ./skeleton
         values:
           name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          run_date: ${{ steps.get_date.output.stdout | trim }}
         conflictStrategy: override
 
     - id: catalogTemplate
