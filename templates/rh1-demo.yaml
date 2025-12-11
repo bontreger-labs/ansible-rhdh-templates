@@ -18,6 +18,8 @@ spec:
         - repoOwner
         - repoName
         - owner
+        - collectionGroup
+        - collectionName
       properties:
         sourceControl:
           title: Select source control option
@@ -44,6 +46,20 @@ spec:
           type: string
           description: Describe the playbook and its purpose to help other users understand what to use it for.
           maxLength: 350
+        collectionGroup:
+          title: Playbook project's collection namespace
+          description: The collection namespace in your new playbook repository. For example, “my_new_collection_namespace”.
+          type: string
+          maxLength: 63
+          minLength: 2
+          pattern: '^[a-z][a-z0-9_]+$'
+        collectionName:
+          title: Playbook project's collection name
+          description: The collection name in your new playbook repository. For example, “my_new_collection_name”.
+          type: string
+          maxLength: 63
+          minLength: 2
+          pattern: '^[a-z][a-z0-9_]+$'
         owner:
           title: Catalog Owner name
           type: string
@@ -71,6 +87,8 @@ spec:
         repoOwner: '${{ parameters.repoOwner }}'
         repoName: '${{ parameters.repoName }}'
         description: '${{ parameters.description }}'
+        collectionGroup: '${{ parameters.collectionGroup }}'
+        collectionName: '${{ parameters.collectionName }}'
         applicationType: playbook-project
         sourceControl: '${{ parameters.sourceControl }}'
 
@@ -105,6 +123,8 @@ spec:
           system: ${{ parameters.system }}
           applicationType: playbook-project
           description: ${{ parameters.description }}
+          collectionGroup: ${{ parameters.collectionGroup }}
+          collectionName: ${{ parameters.collectionName }}
           sourceControl: ${{ parameters.sourceControl }}
           devSpacesBaseUrl: ${{ steps.ansible.output.devSpacesBaseUrl }}
 
