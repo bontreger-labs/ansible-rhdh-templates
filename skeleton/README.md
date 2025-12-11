@@ -2,4 +2,4 @@
 
 > {{ description }}
 
-This Ansible project was created automatically by Red Hat Developer Hub
+This Ansible project was created automatically by Red Hat Developer Hub on {{ run_date }}
