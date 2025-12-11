@@ -79,7 +79,9 @@ spec:
             catalogFilter:
               kind:
                 - System
-  steps:
+steps:
+    # 1. CREATE THE ANSIBLE PROJECT
+    # Output: Creates a folder named "${{ parameters.repoName }}" in the workspace
     - id: ansible
       name: Generating the Ansible Source Code Component
       action: ansible:content:create
@@ -92,43 +94,48 @@ spec:
         applicationType: playbook-project
         sourceControl: '${{ parameters.sourceControl }}'
 
+    # 2. GENERATE DATE (For your README)
     - id: get_date
       name: Generate Timestamp
       action: roadiehq:utils:jsonata
       input:
         expression: $fromMillis($millis(), '[Y0001]-[M01]-[D01]')
 
+    # 3. DOWNLOAD SKELETON (Into the Ansible folder)
+    # We use fetch:plain because we know it works for your network.
     - id: fetch_skeleton
-      name: Force Download Skeleton
+      name: Inject Custom Skeleton
       action: fetch:plain
       input:
-        # This action is purely for downloading. It is much more robust.
+        # Use the URL that we confirmed works
         url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/skeleton
-        targetPath: ./
+        # CRITICAL: Put files INSIDE the folder Ansible created
+        targetPath: ./${{ parameters.repoName }}
 
-    - id: overlay
-      name: Applying Custom Skeleton
+    # 4. APPLY VARIABLES (To the files we just downloaded)
+    - id: template_skeleton
+      name: Customize Skeleton Files
       action: fetch:template
       input:
-        url: ./
-        targetPath: ./
+        # Target the same folder where we just put the files
+        url: ./${{ parameters.repoName }}
+        targetPath: ./${{ parameters.repoName }}
+        conflictStrategy: override
         values:
+          # Map your specific parameters to the variables used in README.md
           name: ${{ parameters.repoName }}
+          owner: ${{ parameters.repoOwner }}
           description: ${{ parameters.description }}
           run_date: ${{ steps.get_date.output.result }}
-      conflictStrategy: override
 
-    - id: debug_overlay
-      name: Debug Overlay Files
-      action: debug:log
-      input:
-        message: "Files processed: ${{ steps.overlay.output.processedFilePaths | dump }}"
-
+    # 5. GENERATE CATALOG INFO (Into the Ansible folder)
     - id: catalogTemplate
       name: Generating the Catalog Info Component
       action: fetch:template
       input:
         url: ./catalog-info/
+        # CRITICAL: Put this inside the folder too
+        targetPath: ./${{ parameters.repoName }}
         values:
           repoUrl: ${{ steps.ansible.output.repoUrl }}
           owner: ${{ parameters.owner }}
@@ -140,6 +147,7 @@ spec:
           sourceControl: ${{ parameters.sourceControl }}
           devSpacesBaseUrl: ${{ steps.ansible.output.devSpacesBaseUrl }}
 
+    # 6. PUBLISH TO GITHUB
     - id: publish
       name: Publish
       action: publish:github
@@ -148,8 +156,11 @@ spec:
         repoUrl: ${{ steps.ansible.output.repoUrl }}
         repoVisibility: 'public'
         defaultBranch: main
-        sourcePath: .
+        # CRITICAL: Only publish the contents of the project folder
+        # This makes "my-demo" the root of your new Git repo.
+        sourcePath: ./${{ parameters.repoName }}
 
+    # 7. REGISTER IN CATALOG
     - id: register
       name: Register
       action: catalog:register
