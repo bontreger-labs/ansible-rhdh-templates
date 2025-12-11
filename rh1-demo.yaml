@@ -29,50 +29,24 @@ steps:
         applicationType: playbook-project
         sourceControl: '${{ parameters.sourceControl }}'
 
-    # 2. GENERATE DATE (Using the compliant action - will not output date)
-    - id: get_date
-      name: Generate Timestamp Placeholder
-      action: debug:log
-      input:
-        message: 'Date generation skipped due to policy restrictions.'
-
-    # 3. DOWNLOAD SKELETON (CRITICAL: Using absolute URL that works, and templating local files)
+    # 2. DOWNLOAD SKELETON (Using compliant fetch:plain for injection)
     - id: overlay
-      name: Inject Custom Skeleton and Template
-      action: fetch:template
+      name: Inject Custom Skeleton
+      action: fetch:plain
       input:
-        # We must use the absolute path to reliably download the folder
         url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/skeleton
-        # Target the root of the Ansible project folder
-        targetPath: ./${{ parameters.repoName }}
-        conflictStrategy: override
-        values:
-          # CRITICAL FIX: Use the correct parameter names!
-          name: ${{ parameters.repoName }}
-          description: ${{ parameters.description }}
-          owner: ${{ parameters.repoOwner }}
-          run_date: '[Date Placeholder]' # Hardcode or placeholder
+        targetPath: ./${{ parameters.repoName }} # Overwrites defaults with static content
 
-    # 4. GENERATE CATALOG INFO (Using the working 'fetch:template' structure)
+    # 3. GENERATE CATALOG INFO (Using compliant fetch:plain for catalog info)
     - id: catalogTemplate
       name: Generating the Catalog Info Component
-      action: fetch:template
+      action: fetch:plain
       input:
-        # Use the relative path to the local catalog-info folder 
-        url: ./catalog-info/
-        targetPath: ./${{ parameters.repoName }}
-        values:
-          repoUrl: ${{ steps.ansible.output.repoUrl }}
-          owner: ${{ parameters.owner }}
-          system: ${{ parameters.system }}
-          applicationType: playbook-project
-          description: ${{ parameters.description }}
-          collectionGroup: ${{ parameters.collectionGroup }}
-          collectionName: ${{ parameters.collectionName }}
-          sourceControl: ${{ parameters.sourceControl }}
-          devSpacesBaseUrl: ${{ steps.ansible.output.devSpacesBaseUrl }}
+        # Fetch the catalog-info file from your repo
+        url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/catalog-info/catalog-info.yaml
+        targetPath: ./${{ parameters.repoName }}/catalog-info.yaml # Place it in the project folder
 
-    # 5. PUBLISH TO GITHUB
+    # 4. PUBLISH TO GITHUB
     - id: publish
       name: Publish
       action: publish:github
@@ -83,7 +57,7 @@ steps:
         defaultBranch: main
         sourcePath: ./${{ parameters.repoName }}
 
-    # 6. REGISTER IN CATALOG
+    # 5. REGISTER IN CATALOG
     - id: register
       name: Register
       action: catalog:register
