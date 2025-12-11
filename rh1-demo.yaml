@@ -103,20 +103,28 @@ steps:
 
     - id: catalogTemplate
       name: Generating the Catalog Info Component
-      action: fetch:template
+      action: catalog:write
       input:
-        url: ./catalog-info/
-        targetPath: ./${{ parameters.repoName }}
-        values:
-          repoUrl: ${{ steps.ansible.output.repoUrl }}
-          owner: ${{ parameters.owner }}
-          system: ${{ parameters.system }}
-          applicationType: playbook-project
-          description: ${{ parameters.description }}
-          collectionGroup: ${{ parameters.collectionGroup }}
-          collectionName: ${{ parameters.collectionName }}
-          sourceControl: ${{ parameters.sourceControl }}
-          devSpacesBaseUrl: ${{ steps.ansible.output.devSpacesBaseUrl }}
+        # Write the file directly into the project folder
+        filePath: ./${{ parameters.repoName }}/catalog-info.yaml
+        content:
+          apiVersion: backstage.io/v1alpha1
+          kind: Component
+          metadata:
+            name: ${{ parameters.repoName }}
+            title: ${{ parameters.repoName }}
+            description: ${{ parameters.description }}
+            tags:
+              - ansible
+              - playbook
+            annotations:
+              # Ensure the GitHub annotation is set for integration
+              github.com/project-slug: ${{ parameters.repoOwner }}/${{ parameters.repoName }}
+          spec:
+            type: service
+            lifecycle: production
+            owner: ${{ parameters.owner }}
+            system: ${{ parameters.system }}
 
     # 6. PUBLISH TO GITHUB
     - id: publish
