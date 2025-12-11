@@ -94,52 +94,34 @@ steps:
         applicationType: playbook-project
         sourceControl: '${{ parameters.sourceControl }}'
 
-    # 2. GENERATE DATE (For your README)
     - id: get_date
       name: Generate Timestamp
       action: roadiehq:utils:jsonata
       input:
         expression: $fromMillis($millis(), '[Y0001]-[M01]-[D01]')
 
-    # 3. DOWNLOAD SKELETON (Into the Ansible folder)
-    # We use fetch:plain because we know it works for your network.
+    - id: cleanup
+      name: Clean up a sampling of Ansible Default Files
+      action: roadiehq:utils:fs:delete
+      input:
+        files:
+          - ./${{ parameters.repoName }}/argspec_validation_plays.yml
+          - ./${{ parameters.repoName }}/argspec_validation_plays.meta.yml
+          - ./${{ parameters.repoName }}/AGENTS.md
+          - ./${{ parameters.repoName }}/network_playbook.yml
+
     - id: fetch_skeleton
       name: Inject Custom Skeleton
       action: fetch:plain
       input:
-        # Use the URL that we confirmed works
         url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/skeleton
-        # CRITICAL: Put files INSIDE the folder Ansible created
         targetPath: ./${{ parameters.repoName }}
 
-    # 4. REPLACE VARIABLES (The Final, Correct Structure)
-    - id: replace_variables
-      name: Replace Variables in Skeleton
-      action: roadiehq:utils:fs:replace
-      input:
-        transform:
-          - files:
-              - ./${{ parameters.repoName }}/** # Target everything recursively
-        # CRITICAL FIX: The replacements must be an array of patches
-            replacements:
-              - find: '{{ name }}'
-                replaceWith: ${{ parameters.repoName }}
-
-              - find: '{{ description }}'
-                replaceWith: ${{ parameters.description }}
-
-              - find: '{{ owner }}'
-                replaceWith: ${{ parameters.repoOwner }}
-
-              - find: '{{ run_date }}'
-                replaceWith: ${{ steps.get_date.output.result }}
-    # 5. GENERATE CATALOG INFO (Into the Ansible folder)
     - id: catalogTemplate
       name: Generating the Catalog Info Component
       action: fetch:template
       input:
         url: ./catalog-info/
-        # CRITICAL: Put this inside the folder too
         targetPath: ./${{ parameters.repoName }}
         values:
           repoUrl: ${{ steps.ansible.output.repoUrl }}
@@ -161,11 +143,8 @@ steps:
         repoUrl: ${{ steps.ansible.output.repoUrl }}
         repoVisibility: 'public'
         defaultBranch: main
-        # CRITICAL: Only publish the contents of the project folder
-        # This makes "my-demo" the root of your new Git repo.
         sourcePath: ./${{ parameters.repoName }}
 
-    # 7. REGISTER IN CATALOG
     - id: register
       name: Register
       action: catalog:register
