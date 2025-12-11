@@ -2,7 +2,7 @@ apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
   name: RH1-Demo-Template
-  title: Bontreger - RH1 Demo (Reverted)
+  title: Bontreger - RH1 Demo (Final Stable)
   description: Create a preconfigured Git project with some scaffolds.
   tags:
     - recommended
@@ -14,6 +14,7 @@ spec:
   type: service
   parameters:
     # ... (parameters block remains the same)
+    
 steps:
     # 1. CREATE THE ANSIBLE PROJECT
     - id: ansible
@@ -28,62 +29,50 @@ steps:
         applicationType: playbook-project
         sourceControl: '${{ parameters.sourceControl }}'
 
-    # 2. DOWNLOAD SKELETON (Download raw files from Git into the project folder)
-    - id: fetch_skeleton
-      name: Download Custom Skeleton
-      action: fetch:plain
+    # 2. GENERATE DATE (Using the compliant action - will not output date)
+    - id: get_date
+      name: Generate Timestamp Placeholder
+      action: debug:log
       input:
-        url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/skeleton
-        targetPath: ./${{ parameters.repoName }}/skeleton_temp # Download to a temporary folder
+        message: 'Date generation skipped due to policy restrictions.'
 
-    # 3. APPLY TEMPLATING AND MOVE FILES
-    # This step uses the downloaded files and processes the variables
-    - id: template_and_move
-      name: Inject Custom Files (Template)
+    # 3. DOWNLOAD SKELETON (CRITICAL: Using absolute URL that works, and templating local files)
+    - id: overlay
+      name: Inject Custom Skeleton and Template
       action: fetch:template
       input:
-        # Source the template files from the folder we just downloaded to
-        url: ./${{ parameters.repoName }}/skeleton_temp 
-        # Target the final location (the root of the project folder)
+        # We must use the absolute path to reliably download the folder
+        url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/skeleton
+        # Target the root of the Ansible project folder
         targetPath: ./${{ parameters.repoName }}
-        # We will need the conflictStrategy to ensure we overwrite defaults
-        conflictStrategy: override 
+        conflictStrategy: override
         values:
-          # Variable mapping (Ensure these match your README file)
+          # CRITICAL FIX: Use the correct parameter names!
           name: ${{ parameters.repoName }}
-          owner: ${{ parameters.repoOwner }}
           description: ${{ parameters.description }}
-          # Date variable will be empty but won't crash the template
+          owner: ${{ parameters.repoOwner }}
+          run_date: '[Date Placeholder]' # Hardcode or placeholder
 
-    # 4. REMOVE TEMPORARY DOWNLOAD FOLDER
-    # NOTE: You will need to re-enable fs:delete if this fails, but let's test without
-    # deleting the temp folder first to avoid another policy check failure.
-    
-    # 5. GENERATE CATALOG INFO (Inline, safe version)
+    # 4. GENERATE CATALOG INFO (Using the working 'fetch:template' structure)
     - id: catalogTemplate
       name: Generating the Catalog Info Component
-      action: catalog:write
+      action: fetch:template
       input:
-        filePath: ./${{ parameters.repoName }}/catalog-info.yaml
-        content:
-          apiVersion: backstage.io/v1alpha1
-          kind: Component
-          metadata:
-            name: ${{ parameters.repoName }}
-            title: ${{ parameters.repoName }}
-            description: ${{ parameters.description }}
-            tags:
-              - ansible
-              - playbook
-            annotations:
-              github.com/project-slug: ${{ parameters.repoOwner }}/${{ parameters.repoName }}
-          spec:
-            type: service
-            lifecycle: production
-            owner: ${{ parameters.owner }}
-            system: ${{ parameters.system }}
+        # Use the relative path to the local catalog-info folder 
+        url: ./catalog-info/
+        targetPath: ./${{ parameters.repoName }}
+        values:
+          repoUrl: ${{ steps.ansible.output.repoUrl }}
+          owner: ${{ parameters.owner }}
+          system: ${{ parameters.system }}
+          applicationType: playbook-project
+          description: ${{ parameters.description }}
+          collectionGroup: ${{ parameters.collectionGroup }}
+          collectionName: ${{ parameters.collectionName }}
+          sourceControl: ${{ parameters.sourceControl }}
+          devSpacesBaseUrl: ${{ steps.ansible.output.devSpacesBaseUrl }}
 
-    # 6. PUBLISH TO GITHUB
+    # 5. PUBLISH TO GITHUB
     - id: publish
       name: Publish
       action: publish:github
@@ -94,7 +83,7 @@ steps:
         defaultBranch: main
         sourcePath: ./${{ parameters.repoName }}
 
-    # 7. REGISTER IN CATALOG
+    # 6. REGISTER IN CATALOG
     - id: register
       name: Register
       action: catalog:register
