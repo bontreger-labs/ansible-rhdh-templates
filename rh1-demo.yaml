@@ -2,60 +2,160 @@ apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
   name: RH1-Demo-Template
-  title: Bontreger - RH1 Demo (Minimum Viable)
-  description: Create a preconfigured Git project.
+  title: Bontreger - RH1 Demo
+  description: Create a preconfigured Git project with some scaffolds.
   tags:
+    - recommended
     - ansible
+    - playbook
 spec:
   owner: user:default/bontreger
   system: ansible
   type: service
   parameters:
-    - title: Provide Information
+    - title: Provide information about the new component
       required:
         - repoOwner
         - repoName
         - owner
+        - collectionGroup
+        - collectionName
       properties:
+        sourceControl:
+          title: Select source control option
+          type: string
+          description: Select the source control option for your Ansible project.
+          default: github.com
+          enum:
+            - github.com
+          enumNames:
+            - 'GitHub'
         repoOwner:
-          title: GitHub Organization/User
+          title: Source code repository organization name or username
           type: string
+          description: The organization name or username of your source code repository. For example, “my-github-username”.
+          maxLength: 100
         repoName:
-          title: Repository Name
+          title: Playbook repository name
+          description: The name of the new playbook project repository. For example, “my-new-playbook-repo”.
           type: string
+          maxLength: 100
+          pattern: '^([a-zA-Z][a-zA-Z0-9_]*)(-[a-zA-Z0-9_]+)*$'
+        description:
+          title: Playbook description
+          type: string
+          description: Describe the playbook and its purpose to help other users understand what to use it for.
+          maxLength: 350
+        collectionGroup:
+          title: Playbook project's collection namespace
+          description: The collection namespace in your new playbook repository. For example, “my_new_collection_namespace”.
+          type: string
+          maxLength: 63
+          minLength: 2
+          pattern: '^[a-z][a-z0-9_]+$'
+        collectionName:
+          title: Playbook project's collection name
+          description: The collection name in your new playbook repository. For example, “my_new_collection_name”.
+          type: string
+          maxLength: 63
+          minLength: 2
+          pattern: '^[a-z][a-z0-9_]+$'
         owner:
-          title: Catalog Owner
+          title: Catalog Owner name
           type: string
+          description: The Red Hat Developer Hub catalog item owner. This will appear on the “My items” tab. For example, “my-devhub-username”.
           ui:field: EntityPicker
-
-steps:
-    # 1. CREATE THE ANSIBLE PROJECT (The core function)
+          ui:options:
+            catalogFilter:
+              kind:
+                - Group
+                - User
+        system:
+          title: System
+          type: string
+          description: The Red Hat Developer Hub system catalog item name. This will appear on the “My items” tab. For example, “my-devhub-system”.
+          ui:field: EntityPicker
+          ui:options:
+            catalogFilter:
+              kind:
+                - System
+  steps:
     - id: ansible
       name: Generating the Ansible Source Code Component
       action: ansible:content:create
       input:
         repoOwner: '${{ parameters.repoOwner }}'
         repoName: '${{ parameters.repoName }}'
+        description: '${{ parameters.description }}'
+        collectionGroup: '${{ parameters.collectionGroup }}'
+        collectionName: '${{ parameters.collectionName }}'
         applicationType: playbook-project
+        sourceControl: '${{ parameters.sourceControl }}'
 
-    # 2. PUBLISH TO GITHUB (Minimal inputs)
+    - id: get_date
+      name: Generate Timestamp
+      action: roadiehq:utils:jsonata
+      input:
+        expression: $fromMillis($millis(), '[Y0001]-[M01]-[D01]')
+
+    # FIX: Use Absolute URL and Correct Variable Name (repoName)
+    - id: overlay
+      name: Applying Custom Skeleton
+      action: fetch:template
+      input:
+        # Changed from ../skeleton to absolute URL
+        url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/skeleton
+        targetPath: ./${{ parameters.repoName }}
+        # Removed conflictStrategy if it causes issues, but keeping if you said this loads.
+        conflictStrategy: override 
+        values:
+          # Changed from 'name' to 'repoName'
+          name: ${{ parameters.repoName }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.repoOwner }}
+          run_date: ${{ steps.get_date.output.result }}
+
+    # FIX: Use Absolute URL for Catalog Info
+    - id: catalogTemplate
+      name: Generating the Catalog Info Component
+      action: fetch:template
+      input:
+        # Changed from ../catalog-info/ to absolute URL
+        url: https://github.com/bontreger-labs/ansible-rhdh-templates/tree/main/catalog-info/
+        targetPath: ./${{ parameters.repoName }}
+        values:
+          repoUrl: ${{ steps.ansible.output.repoUrl }}
+          owner: ${{ parameters.owner }}
+          system: ${{ parameters.system }}
+          applicationType: playbook-project
+          description: ${{ parameters.description }}
+          collectionGroup: ${{ parameters.collectionGroup }}
+          collectionName: ${{ parameters.collectionName }}
+          sourceControl: ${{ parameters.sourceControl }}
+          devSpacesBaseUrl: ${{ steps.ansible.output.devSpacesBaseUrl }}
+
     - id: publish
-      name: Publish to GitHub
+      name: Publish
       action: publish:github
       input:
-        repoUrl: https://github.com/${{ parameters.repoOwner }}/${{ parameters.repoName }}
+        description: ${{ parameters.description }}
+        repoUrl: ${{ steps.ansible.output.repoUrl }}
         repoVisibility: 'public'
+        defaultBranch: main
+        # FIX: Ensure we publish the folder, not the parent root
         sourcePath: ./${{ parameters.repoName }}
 
-    # 3. REGISTER IN CATALOG (Minimal inputs)
     - id: register
-      name: Register in Catalog
+      name: Register
       action: catalog:register
       input:
         repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
         catalogInfoPath: '/catalog-info.yaml'
 
-output:
+  output:
     links:
       - title: Repository
         url: ${{ steps.publish.output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps.register.output.entityRef }}
