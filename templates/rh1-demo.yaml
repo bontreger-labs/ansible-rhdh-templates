@@ -110,14 +110,6 @@ spec:
           run_date: ${{ steps.get_date.output.result }}
       conflictStrategy: override
 
-    - id: debug_workspace
-      name: List Workspace Contents
-      action: exec
-      input:
-        command: ls
-        args:
-          - '-R' # Recursive list to show all subfolders
-
     - id: catalogTemplate
       name: Generating the Catalog Info Component
       action: fetch:template
