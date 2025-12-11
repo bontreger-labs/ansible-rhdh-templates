@@ -117,23 +117,22 @@ steps:
       name: Replace Variables in Skeleton
       action: roadiehq:utils:fs:replace
       input:
-        files:
-          - ./${{ parameters.repoName }}/** # Target everything recursively
-        
+        transform:
+          - files:
+              - ./${{ parameters.repoName }}/** # Target everything recursively
         # CRITICAL FIX: The replacements must be an array of patches
-        replacements:
-          - find: '{{ name }}'
-            replaceWith: ${{ parameters.repoName }}
-          
-          - find: '{{ description }}'
-            replaceWith: ${{ parameters.description }}
-            
-          - find: '{{ owner }}'
-            replaceWith: ${{ parameters.repoOwner }}
-            
-          - find: '{{ run_date }}'
-            replaceWith: ${{ steps.get_date.output.result }}
+            replacements:
+              - find: '{{ name }}'
+                replaceWith: ${{ parameters.repoName }}
 
+              - find: '{{ description }}'
+                replaceWith: ${{ parameters.description }}
+
+              - find: '{{ owner }}'
+                replaceWith: ${{ parameters.repoOwner }}
+
+              - find: '{{ run_date }}'
+                replaceWith: ${{ steps.get_date.output.result }}
     # 5. GENERATE CATALOG INFO (Into the Ansible folder)
     - id: catalogTemplate
       name: Generating the Catalog Info Component
