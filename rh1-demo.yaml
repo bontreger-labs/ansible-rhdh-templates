@@ -2,7 +2,7 @@ apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
   name: RH1-Demo-Template
-  title: Bontreger - RH1 Demo (Final Fix)
+  title: Bontreger - RH1 Demo
   description: Create a preconfigured Git project with some scaffolds.
   tags:
     - recommended
