@@ -119,6 +119,7 @@ spec:
               - playbook
             annotations:
               github.com/project-slug: ${{ parameters.repoOwner }}/${{ parameters.repoName }}
+              devspaces.openshift.io/repository-url: https://github.com/${{ parameters.repoOwner }}/${{ parameters.repoName }}
           spec:
             type: service
             lifecycle: production
