@@ -143,7 +143,6 @@ spec:
       input:
         #repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
         #catalogInfoPath: '/catalog-info.yaml'
-        repoContentsUrl: ${{ steps.publish.output.remoteUrl }}/blob/main/catalog-info.yaml
         catalogInfoUrl: ${{ steps.publish.output.remoteUrl }}/blob/main/catalog-info.yaml
 
   output:
