@@ -107,7 +107,6 @@ spec:
       action: catalog:write
       input:
         filePath: ./${{ parameters.repoName }}/catalog-info.yaml
-        # FIX: Changed 'content' to 'entity' to match schema
         entity:
           apiVersion: backstage.io/v1alpha1
           kind: Component
