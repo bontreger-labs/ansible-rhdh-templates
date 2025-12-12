@@ -141,7 +141,7 @@ spec:
       name: Register
       action: catalog:register
       input:
-        catalogInfoUrl: https://raw.githubusercontent.com/${{ parameters.repoOwner }}/${{ parameters.repoName }}/main/catalog-info.yaml
+        catalogInfoUrl: https://raw.githubusercontent.com/${{ parameters.repoOwner }}/${{ parameters.repoName }}/main/${{ parameters.repoName }}/catalog-info.yaml
 
   output:
     links:
