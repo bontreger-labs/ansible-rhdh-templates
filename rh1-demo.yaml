@@ -151,3 +151,7 @@ spec:
       - title: Open in catalog
         icon: catalog
         entityRef: ${{ steps.register.output.entityRef }}
+      - title: Open in Dev Spaces
+        icon: code
+        # We construct the URL by appending the Git Repo URL to your Dev Spaces Base URL
+        url: https://devspaces.apps.ocp.bontreger.dev/#${{ steps.publish.output.remoteUrl }}
